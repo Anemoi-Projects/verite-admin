@@ -1,28 +1,15 @@
 "use client";
-import { Pencil, Trash2, Eye, ChevronDown, MoreHorizontal } from "lucide-react";
-
-import React, { Suspense, useEffect, useState, useMemo } from "react";
-import axios from "axios";
-import * as Dialog from "@radix-ui/react-dialog";
-import FAQForm from "./components/FAQForm";
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ThemeToggler from "@/common-components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,13 +18,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
-import RegionSelecter from "@/common-components/RegionSelecter";
-import RegionStore from "@/store/RegionStore";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import axios from "axios";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import FAQForm from "./components/FAQForm";
 const Page = () => {
-  const router = useRouter();
-  const { region, setRegion } = RegionStore();
-
   const [faqFormState, setFAQFormState] = useState({
     faqID: null,
     state: "add",
@@ -57,9 +65,6 @@ const Page = () => {
       setAuthToken(localStorage.getItem("authToken"));
     }
   }, [authToken]);
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-  };
 
   const deleteFAQ = () => {
     let config = {
@@ -92,7 +97,7 @@ const Page = () => {
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${process.env.apiURL}/api/v1/faq/getAllFAQ?lang=${region}`,
+      url: `${process.env.apiURL}/api/v1/faq/getAllFAQ`,
       headers: {},
     };
 
@@ -198,24 +203,20 @@ const Page = () => {
   });
 
   useEffect(() => {
-    if (region) {
-      getAllFAQs();
-    }
-  }, [region]);
+    getAllFAQs();
+  }, []);
   return (
-    <main className="flex-1 overflow-auto bg-white text-black">
-      <div className="flex justify-between items-center border-b py-4 pl-6  border-gray-200">
-        <h1 className="text-2xl font-medium   text-[#140B49] ">FAQs</h1>
+    <main className="flex-1 overflow-auto">
+      <div className="flex justify-between p-5 border-b">
+        <h1 className="text-2xl font-medium">FAQs</h1>
+        <ThemeToggler />
       </div>
       <section className="p-6">
         <div className="flex justify-between items-center mb-4">
-          {" "}
-          <h2 className="text-lg font-medium mb-4 text-[#243874]">
-            FAQ ID/ Heading
-          </h2>
+          <h2 className="text-lg font-medium">FAQ ID/ Heading</h2>
           <div className="flex gap-4 items-center">
-            <button
-              className="bg-gradient-to-r  from-[#140B49] to-[#140B49]/[0.72] text-white px-8 py-2 rounded-lg  block cursor-pointer"
+            <Button
+              className="theme-button"
               onClick={() => {
                 setFAQFormState((prev) => {
                   return { faqID: null, state: "add" };
@@ -224,16 +225,14 @@ const Page = () => {
               }}
             >
               Add FAQ
-            </button>
-
-            <RegionSelecter region={region} setRegion={setRegion} />
+            </Button>
           </div>
         </div>
 
         <div className=" mb-4 ">
           {/* .............table........... */}
 
-          <div className="w-full gap-4  p-3 border border-slate-200 rounded overflow-hidden">
+          <div className="w-full gap-4  p-5 border rounded">
             <div className="flex items-center py-4">
               <Input
                 placeholder="Search..."
@@ -371,94 +370,46 @@ const Page = () => {
       </section>
 
       {/* .........faq panel...... */}
-      <Dialog.Root
-        open={showFAQPanel}
-        onOpenChange={() => {
-          setShowFAQPanel(false);
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
-
-          <Dialog.Content className="fixed right-0 top-0 h-full w-full sm:w-2/5 bg-white border-l shadow-lg z-50 p-6 overflow-y-auto transition-all animate-in slide-in-from-right">
-            <div className="flex justify-between items-center mb-4 border-b-4 pb-2 border-[#140B49]">
-              <div className="flex justify-center items-center gap-2">
-                {" "}
-                <Dialog.Close
-                  className="rounded-full p-1 hover:bg-gray-100 transition"
-                  aria-label="Close panel"
-                >
-                  <span
-                    className="w-5 h-5 text-gray-500 hover:text-gray-700 transition"
-                    strokeWidth={2.5}
-                  >
-                    x
-                  </span>
-                </Dialog.Close>
-                <Dialog.Title className="text-lg font-semibold text-black">
-                  {faqFormState?.state?.toUpperCase()} FAQ
-                </Dialog.Title>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setShowFAQPanel(false);
-                  }}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-            <FAQForm
-              faqFormState={faqFormState}
-              getAllFAQs={getAllFAQs}
-              setShowFAQPanel={setShowFAQPanel}
-              selectedLanguage={region}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <Sheet open={showFAQPanel} onOpenChange={setShowFAQPanel}>
+        <SheetContent
+          side="right"
+          className="w-full sm:w-[450px] max-h-screen overflow-y-auto p-6"
+        >
+          <SheetHeader className={"p-0 py-4"}>
+            <SheetTitle className="text-lg font-semibold ">
+              {faqFormState?.state?.toUpperCase()} FAQ
+            </SheetTitle>
+          </SheetHeader>
+          {/* FORM */}
+          <FAQForm
+            faqFormState={faqFormState}
+            getAllFAQs={getAllFAQs}
+            setShowFAQPanel={setShowFAQPanel}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* ..........delete modal........ */}
-      <Dialog.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-          <Dialog.Content
-            // minwidth="450px"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 min-w-[550px]"
-          >
-            <Dialog.Title className="font-bold text-lg text-center my-5 text-black">
-              Delete FAQ
-            </Dialog.Title>
-            <Dialog.Description
-              className="text-red-500 text-center text-sm mb-4"
-              size="2"
-              mb="4"
-            >
-              Are you sure you want to delete this FAQ?
-            </Dialog.Description>
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm FAQ Deletion</DialogTitle>
+            <DialogDescription>
+              Deleting this question will permanently erase question. Proceed
+              with caution.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="flex items-center justify-center my-5 gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                }}
-                className="bg-[#5c5774]   text-white px-4 py-1.5 text-sm rounded"
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-gradient-to-r  from-[#8d0808] to-red-600 cursor-pointer hover:bg-gradient-to-l  text-white px-4 py-1.5 text-sm rounded"
-                onClick={deleteFAQ}
-              >
-                Delete
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="button" onClick={deleteFAQ} variant={"destructive"}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };

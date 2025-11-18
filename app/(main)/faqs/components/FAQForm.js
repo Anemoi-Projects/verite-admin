@@ -15,6 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
+import { Button } from "@/components/ui/button";
+import { ClipLoader } from "react-spinners";
 function FAQForm({
   faqFormState,
   getAllFAQs,
@@ -23,13 +25,10 @@ function FAQForm({
 }) {
   const { faqID, state } = faqFormState;
   const isViewMode = state === "view";
-  const [slug, setSlug] = useState("");
-  const [thumbnail, setThumbnail] = useState(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [initialData, setInitialData] = useState({});
-  const [content, setContent] = useState("");
   const [tagOptions, setTagOptions] = useState([]);
   const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(false);
   const form = useForm({
     defaultValues: {
       question: "",
@@ -77,6 +76,7 @@ function FAQForm({
   }, [state, faqID]);
   // comment
   const handleDraftSave = () => {
+    setLoading(true);
     const isEditMode = state === "edit";
     const isAddMode = state === "add";
 
@@ -91,11 +91,10 @@ function FAQForm({
       if (!hasChanges) {
         setShowFAQPanel(false);
         toast.error("No changes detected.");
+        setLoading(false);
         return;
       }
     }
-    console.log("tag", tag, authToken);
-
     let data;
     if (isAddMode) {
       data = JSON.stringify({
@@ -119,8 +118,8 @@ function FAQForm({
     }
 
     const url = isAddMode
-      ? `${process.env.apiURL}/api/v1/faq/createFAQ?lang=${selectedLanguage}`
-      : `${process.env.apiURL}/api/v1/faq/editFAQ?id=${faqID}&lang=${selectedLanguage}`;
+      ? `${process.env.apiURL}/api/v1/faq/createFAQ`
+      : `${process.env.apiURL}/api/v1/faq/updateFAQ?id=${faqID}`;
     const method = isAddMode ? "post" : "put";
 
     if (question && answer && tag?.length > 0) {
@@ -159,14 +158,17 @@ function FAQForm({
               tag: [],
             });
           }
+          setLoading(false);
         })
         .catch((err) => {
-          toast("Failed to save FAQ");
+          toast.error("Failed to save FAQ");
+          setLoading(false);
         });
     } else {
       toast(
         "Please fill the mandatory fields (Question & Answer) before saving the FAQ"
       );
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -176,6 +178,7 @@ function FAQForm({
       getAllCategories(token);
     }
   }, []);
+
   const getAllCategories = useCallback(
     (token) => {
       const config = {
@@ -206,10 +209,7 @@ function FAQForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="space-y-4 text-black"
-      >
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
         <FormField
           control={form.control}
           name="question"
@@ -217,7 +217,11 @@ function FAQForm({
             <FormItem>
               <FormLabel>Question</FormLabel>
               <FormControl>
-                <Input {...field} disabled={isViewMode} />
+                <Input
+                  {...field}
+                  disabled={isViewMode}
+                  placeholder="Enter question"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -235,33 +239,23 @@ function FAQForm({
                   className="min-h-[150px] resize-none"
                   {...field}
                   disabled={isViewMode}
+                  placeholder="Enter answer..."
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        {/* <FormField
-          control={form.control}
-          name="tag"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>FAQ Tags</FormLabel>
-              <FormControl>
-                <Input {...field} disabled={isViewMode} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
+
         <FormField
           control={form.control}
           name="tag"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Blog Tags</FormLabel>
+              <FormLabel>FAQ Category</FormLabel>
               <FormControl>
                 <Select
+                  className="bg-transparent"
                   isMulti
                   isDisabled={isViewMode}
                   options={selectOptions}
@@ -281,14 +275,14 @@ function FAQForm({
         />
 
         <div className="mt-6 flex gap-x-5">
-          <button
-            type="button"
-            className="bg-gradient-to-r from-[#140B49] to-[#140B49]/[0.72] text-white px-4 py-1.5 text-sm rounded"
-            disabled={isViewMode}
+          <Button
+            type="submit"
+            className="theme-button w-full"
+            disabled={isViewMode || loading}
             onClick={handleDraftSave}
           >
-            Save FAQ
-          </button>
+            {loading ? <ClipLoader size={25} color="white" /> : "Save FAQ"}
+          </Button>
         </div>
       </form>
     </Form>

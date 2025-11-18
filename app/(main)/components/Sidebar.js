@@ -59,11 +59,11 @@ const Sidebar = () => {
       <nav className="flex flex-col gap-6 w-full px-2">
         <NavItem Icon={LayoutDashboard} label="Dashboard" href="/dashboard" />
         <NavItem Icon={FileText} label="Pages" href="/all-pages" />
-        <NavItem Icon={Shield} label="Teams" href="/teams" />
-        <NavItem Icon={MessageCircleQuestion} label="FAQs" href="/#" />
-        <NavItem Icon={Library} label="Tag Library" href="/#" />
-        <NavItem Icon={User} label="Users" href="/#" />
-        <NavItem Icon={MessageCircle} label="Testimonials" href="/#" />
+        <NavItem Icon={Shield} label="Teams & Partners" href="/teams" />
+        <NavItem Icon={Library} label="Category Library" href="/library" />
+        <NavItem Icon={MessageCircleQuestion} label="FAQs" href="/faqs" />
+        <NavItem Icon={User} label="Users" href="#" />
+        <NavItem Icon={MessageCircle} label="Testimonials" href="#" />
       </nav>
       <div className="mt-5 mb-6 w-full px-2">
         <div

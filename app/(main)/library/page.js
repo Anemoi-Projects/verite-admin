@@ -1,28 +1,15 @@
 "use client";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
-
-import { useEffect, useState } from "react";
-import axios from "axios";
-import * as Dialog from "@radix-ui/react-dialog";
-
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ThemeToggler from "@/common-components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,40 +18,49 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
-
-import FAQCategoriesTable from "./components/FAQCategoriesTable";
-import BlogCategoryForm from "./components/BlogCategoryForm";
-import ResourceCategoriesTable from "./components/ResourceCategoriesTable";
-import RegionStore from "@/store/RegionStore";
-import RegionSelecter from "@/common-components/RegionSelecter";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import axios from "axios";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import FAQCategoryForm from "./components/FAQCategoryForm";
 const Page = () => {
   const [authToken, setAuthToken] = useState("");
-  const [blogCategoryForm, setBlogCategoryForm] = useState({
+  const [faqCategoryForm, setFaqCategoryForm] = useState({
     id: null,
     state: "add",
   });
-  const [resourceCategoryForm, setResourceCategoryForm] = useState({
-    id: null,
-    state: "add",
-  });
-  const [faqCategoryForm, setFAQCategoryForm] = useState({
-    id: null,
-    state: "add",
-  });
-  const [showBlogCategoryPanel, setShowBlogCategoryPanel] = useState(false);
-  const [showResourceCategoryPanel, setShowResourceCategoryPanel] =
-    useState(false);
-  const [showFAQCategoryPanel, setShowFAQCategoryPanel] = useState(false);
-  const { region: selectedLanguage, setRegion: setSelectedLanguage } =
-    RegionStore();
+
+  const [showFaqCategoryPanel, setShowFaqCategoryPanel] = useState(false);
+
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [allBlogCategories, setAllBlogCategories] = useState([]);
+  const [allFaqCategories, setAllFaqCategories] = useState([]);
   const columns = [
     {
       accessorKey: "Sr. No",
@@ -92,8 +88,8 @@ const Page = () => {
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
-                  setShowBlogCategoryPanel(true);
-                  setBlogCategoryForm({
+                  setShowFaqCategoryPanel(true);
+                  setFaqCategoryForm({
                     state: "edit",
                     id: row.original._id,
                   });
@@ -106,7 +102,7 @@ const Page = () => {
                 className="cursor-pointer"
                 onClick={() => {
                   setShowDeleteModal(true);
-                  setBlogCategoryForm({
+                  setFaqCategoryForm({
                     state: "delete",
                     id: row.original._id,
                   });
@@ -122,7 +118,7 @@ const Page = () => {
   ];
 
   const table = useReactTable({
-    data: allBlogCategories,
+    data: allFaqCategories,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -141,16 +137,12 @@ const Page = () => {
       globalFilter,
     },
   });
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-    // getSinglePageData(e.target.value);
-  };
 
   const deleteCategory = () => {
     let config = {
       method: "delete",
       maxBodyLength: Infinity,
-      url: `${process.env.apiURL}/api/v1/admin/deleteCategory?id=${blogCategoryForm.id}`,
+      url: `${process.env.apiURL}/api/v1/admin/deleteCategory?id=${faqCategoryForm.id}`,
       headers: { Authorization: authToken },
     };
 
@@ -158,7 +150,7 @@ const Page = () => {
       .request(config)
       .then((response) => {
         // console.log(JSON.stringify(response.data));
-        setBlogCategoryForm({
+        setFaqCategoryForm({
           state: "add",
           id: null,
         });
@@ -169,7 +161,7 @@ const Page = () => {
         getAllBlogCategories();
       })
       .catch((error) => {
-        setBlogCategoryForm({
+        setFaqCategoryForm({
           state: "add",
           id: null,
         });
@@ -183,10 +175,7 @@ const Page = () => {
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url:
-        `${process.env.apiURL}/api/v1/admin/getAllCategories?slug=blog&lang=` +
-        selectedLanguage,
-
+      url: `${process.env.apiURL}/api/v1/admin/getAllCategories?slug=faq`,
       headers: {
         Authorization: token,
       },
@@ -195,7 +184,7 @@ const Page = () => {
     axios
       .request(config)
       .then((response) => {
-        setAllBlogCategories(response.data.data);
+        setAllFaqCategories(response.data.data);
         console.log(JSON.stringify(response.data));
       })
       .catch((error) => {
@@ -207,38 +196,32 @@ const Page = () => {
       setAuthToken(localStorage.getItem("authToken"));
       getAllBlogCategories(localStorage.getItem("authToken"));
     }
-  }, [selectedLanguage]);
+  }, []);
 
   return (
     <>
-      <div className="p-6 space-y-10">
-        {/* First Table Section */}
-        <div className="flex justify-end">
-          <RegionSelecter
-            setRegion={setSelectedLanguage}
-            region={selectedLanguage}
-          />
+      <section>
+        <div className="flex justify-between p-5 border-b">
+          <h1 className="text-2xl font-medium">Categories Library</h1>
+          <ThemeToggler />
         </div>
-        <section>
-          <div className="w-full gap-4  p-3  rounded overflow-hidden">
-            <div className="flex justify-between my-3">
-              <h2 className="text-2xl font-semibold mb-4 text-[#0D0E52]">
-                Blog Categories
-              </h2>
-              <div>
-                {" "}
-                <button
-                  onClick={() => {
-                    setShowBlogCategoryPanel(true);
-                    setBlogCategoryForm({ id: null, state: "add" });
-                  }}
-                  className="bg-gradient-to-r  from-[#140B49] to-[#140B49]/[0.72] text-white px-8 py-2 rounded-lg   block cursor-pointer"
-                >
-                  Add Blog Category
-                </button>
-              </div>
+        <div className="w-full gap-4  p-3  rounded overflow-hidden">
+          <div className="flex justify-between my-3">
+            <h2 className="text-2xl font-semibold">FAQ Categories</h2>
+            <div>
+              <Button
+                onClick={() => {
+                  setShowFaqCategoryPanel(true);
+                  setFaqCategoryForm({ id: null, state: "add" });
+                }}
+                className="theme-button"
+              >
+                Add FAQ Category
+              </Button>
             </div>
+          </div>
 
+          <div className="p-5 border rounded-md ">
             <div className="flex items-center py-4">
               <Input
                 placeholder="Search..."
@@ -318,7 +301,7 @@ const Page = () => {
                         colSpan={columns.length}
                         className="h-24 text-center"
                       >
-                        No Blogs Categories Found.
+                        No Categories Found.
                       </TableCell>
                     </TableRow>
                   )}
@@ -344,7 +327,7 @@ const Page = () => {
                   )}
                 </strong>{" "}
                 of <strong>{table.getFilteredRowModel().rows.length}</strong>{" "}
-                drafts
+                categories
               </div>
               <div className="flex flex-row gap-2">
                 <Button
@@ -366,116 +349,54 @@ const Page = () => {
               </div>
             </div>
           </div>
-        </section>
-      </div>
-      {/* Second Table Section */}
+        </div>
+      </section>
 
-      <ResourceCategoriesTable
-        showBlogCategoryPanel={showResourceCategoryPanel}
-        blogCategoryForm={resourceCategoryForm}
-        setShowBlogCategoryPanel={setShowResourceCategoryPanel}
-        selectedLanguage={selectedLanguage}
-        setBlogCategoryForm={setResourceCategoryForm}
-      />
-
-      {/* Third Table Section */}
-
-      <FAQCategoriesTable
-        showBlogCategoryPanel={showFAQCategoryPanel}
-        blogCategoryForm={faqCategoryForm}
-        setShowBlogCategoryPanel={setShowFAQCategoryPanel}
-        selectedLanguage={selectedLanguage}
-        setBlogCategoryForm={setFAQCategoryForm}
-      />
       {/* .........faq panel...... */}
-      <Dialog.Root
-        open={showBlogCategoryPanel}
-        onOpenChange={() => {
-          setShowBlogCategoryPanel(false);
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
-
-          <Dialog.Content className="fixed top-1/2 left-1/2 max-h-[90vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-6 shadow-lg z-50 overflow-y-auto transition-all animate-in fade-in-90">
-            <div className="flex justify-between items-center mb-4 border-b-4 pb-2 border-[#140B49]">
-              <div className="flex justify-center items-center gap-2">
-                {" "}
-                <Dialog.Close
-                  className="rounded-full p-1 hover:bg-gray-100 transition"
-                  aria-label="Close panel"
-                >
-                  <span
-                    className="w-5 h-5 text-gray-500 hover:text-gray-700 transition"
-                    strokeWidth={2.5}
-                  >
-                    x
-                  </span>
-                </Dialog.Close>
-                <Dialog.Title className="text-lg font-semibold text-black">
-                  {blogCategoryForm?.state?.toUpperCase()} Blog Category
-                </Dialog.Title>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setShowBlogCategoryPanel(false);
-                  }}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-            <BlogCategoryForm
-              blogCategoryForm={blogCategoryForm}
-              getAllBlogCategories={getAllBlogCategories}
-              setShowBlogCategoryPanel={setShowBlogCategoryPanel}
-              selectedLanguage={selectedLanguage}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <Sheet open={showFaqCategoryPanel} onOpenChange={setShowFaqCategoryPanel}>
+        <SheetContent
+          side="right"
+          className="w-full sm:w-[450px] max-h-screen overflow-y-auto p-6"
+        >
+          <SheetHeader className={"p-0 py-4"}>
+            <SheetTitle className="text-lg font-semibold ">
+              {faqCategoryForm?.state?.toUpperCase()} FAQ Category
+            </SheetTitle>
+          </SheetHeader>
+          {/* FORM */}
+          <FAQCategoryForm
+            faqCategoryForm={faqCategoryForm}
+            getAllFaqCategories={getAllBlogCategories}
+            setShowFaqCategoryPanel={setShowFaqCategoryPanel}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* ..........delete modal........ */}
-      <Dialog.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-          <Dialog.Content
-            // minwidth="450px"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 min-w-[550px]"
-          >
-            <Dialog.Title className="font-bold text-lg text-center my-5 text-black">
-              Delete Blog Category
-            </Dialog.Title>
-            <Dialog.Description
-              className="text-red-500 text-center text-sm mb-4"
-              size="2"
-              mb="4"
-            >
-              Are you sure you want to delete this Blog Category?
-            </Dialog.Description>
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Category Deletion</DialogTitle>
+            <DialogDescription>
+              Deleting this category will permanently erase category and
+              associated details. Proceed with caution.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="flex items-center justify-center my-5 gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                }}
-                className="bg-[#5c5774]   text-white px-4 py-1.5 text-sm rounded"
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-gradient-to-r  from-[#8d0808] to-red-600 cursor-pointer hover:bg-gradient-to-l  text-white px-4 py-1.5 text-sm rounded"
-                onClick={deleteCategory}
-              >
-                Delete
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={deleteCategory}
+              variant={"destructive"}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -15,21 +15,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
+import { Button } from "@/components/ui/button";
+import { ClipLoader } from "react-spinners";
 function FAQCategoryForm({
-  blogCategoryForm,
-  getAllBlogCategories,
-  setShowBlogCategoryPanel,
-  selectedLanguage,
+  faqCategoryForm,
+  getAllFaqCategories,
+  setShowFaqCategoryPanel,
 }) {
-  const { id, state } = blogCategoryForm;
+  const { id, state } = faqCategoryForm;
   const isViewMode = state === "view";
-  const [slug, setSlug] = useState("");
-  const [thumbnail, setThumbnail] = useState(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+
   const [initialData, setInitialData] = useState({});
-  const [content, setContent] = useState("");
-  const [tagOptions, setTagOptions] = useState([]);
   const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(false);
   const form = useForm({
     defaultValues: {
       name: "",
@@ -69,6 +67,7 @@ function FAQCategoryForm({
   }, [state, id]);
   // comment
   const handleDraftSave = () => {
+    setLoading(true);
     const isEditMode = state === "edit";
     const isAddMode = state === "add";
 
@@ -78,8 +77,9 @@ function FAQCategoryForm({
       const hasChanges = name !== initialData.name;
 
       if (!hasChanges) {
-        setShowBlogCategoryPanel(false);
+        setShowFaqCategoryPanel(false);
         toast.error("No changes detected.");
+        setLoading(false);
         return;
       }
     }
@@ -96,8 +96,8 @@ function FAQCategoryForm({
     }
 
     const url = isAddMode
-      ? `${process.env.apiURL}/api/v1/admin/createCategory?lang=${selectedLanguage}`
-      : `${process.env.apiURL}/api/v1/admin/updateCategory?id=${id}&lang=${selectedLanguage}`;
+      ? `${process.env.apiURL}/api/v1/admin/createCategory`
+      : `${process.env.apiURL}/api/v1/admin/updateCategory?id=${id}`;
     const method = isAddMode ? "post" : "put";
 
     if (name) {
@@ -118,8 +118,8 @@ function FAQCategoryForm({
           toast.success(
             `FAQ Category ${isAddMode ? "created" : "updated"} successfully!`
           );
-          getAllBlogCategories();
-          setShowBlogCategoryPanel(false);
+          getAllFaqCategories();
+          setShowFaqCategoryPanel(false);
 
           if (isEditMode) {
             setInitialData({
@@ -132,55 +132,29 @@ function FAQCategoryForm({
               name: "",
             });
           }
+          setLoading(false);
         })
         .catch((err) => {
           toast("Failed to save FAQ Category");
         });
+      setLoading(false);
     } else {
       toast(
         "Please fill the mandatory fields (name) before saving the FAQ Category"
       );
+      setLoading(false);
     }
   };
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       setAuthToken(token);
-      getAllCategories(token);
     }
   }, []);
-  const getAllCategories = useCallback(
-    (token) => {
-      const config = {
-        method: "get",
-        maxBodyLength: Infinity,
-        url:
-          "https://21-nexus-web-be.vercel.app/api/v1/admin/getAllCategories?slug=blog&lang=" +
-          selectedLanguage,
-        headers: {
-          Authorization: token,
-        },
-      };
-
-      axios
-        .request(config)
-        .then((response) => {
-          console.log(JSON.stringify(response.data));
-          setTagOptions(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching categories:", error);
-        });
-    },
-    [authToken]
-  );
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="space-y-4 text-black"
-      >
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -188,23 +162,29 @@ function FAQCategoryForm({
             <FormItem>
               <FormLabel>Category Name</FormLabel>
               <FormControl>
-                <Input {...field} disabled={isViewMode} />
+                <Input
+                  {...field}
+                  disabled={isViewMode}
+                  placeholder="Enter category name"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="mt-6 flex gap-x-5">
-          <button
-            type="button"
-            className="bg-gradient-to-r from-[#140B49] to-[#140B49]/[0.72] text-white px-4 py-1.5 text-sm rounded"
-            disabled={isViewMode}
-            onClick={handleDraftSave}
-          >
-            Save FAQ Category
-          </button>
-        </div>
+        <Button
+          type="button"
+          disabled={isViewMode || loading}
+          className="theme-button w-full"
+          onClick={handleDraftSave}
+        >
+          {loading ? (
+            <ClipLoader size={25} color="white" />
+          ) : (
+            "Save FAQ Category"
+          )}
+        </Button>
       </form>
     </Form>
   );
