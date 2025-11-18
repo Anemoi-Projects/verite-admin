@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { ClipLoader } from "react-spinners";
 function TeamForm({
   teamFormState,
   getAllTeamMembers,
@@ -90,6 +91,7 @@ function TeamForm({
 
     const { name, designation, picture, linkedIn } = form.getValues();
 
+    const formData = new FormData();
     if (isEditMode) {
       const hasChanges =
         name !== initialData.name ||
@@ -102,25 +104,34 @@ function TeamForm({
         toast.error("No changes detected.");
         return;
       }
+      if (name !== initialData.name) {
+        formData.append("name", name);
+      }
+
+      if (designation !== initialData.designation) {
+        formData.append("designation", designation);
+      }
+
+      if (linkedIn !== initialData.linkedIn && linkedIn) {
+        formData.append("linkedIn", linkedIn);
+      }
     }
 
-    const formData = new FormData();
+    if (isAddMode) {
+      formData.append("name", name);
+      formData.append("designation", designation);
 
-    formData.append("name", name);
-    formData.append("designation", designation);
+      if (linkedIn) {
+        formData.append("linkedIn", linkedIn);
+      }
+    }
 
     if (imageFile) {
       formData.append("picture", imageFile);
-    } else {
-      formData.append("picture", picture);
     }
-    if (linkedIn) {
-      formData.append("linkedIn", linkedIn);
-    }
-
     const api_url = isAddMode
       ? `${process.env.apiURL}/api/v1/team/createMember?type=internalTeam`
-      : `${process.env.apiURL}/api/v1/team/editMember?id=${ID}&type=internalTeam`;
+      : `${process.env.apiURL}/api/v1/team/updateMember?id=${ID}&type=internalTeam`;
     const method = isAddMode ? "post" : "put";
 
     if (name && designation && picture) {
@@ -265,12 +276,16 @@ function TeamForm({
 
         <div className="mt-6 flex gap-x-5">
           <Button
-            type="button"
+            type="submit"
             className="theme-button w-full"
             disabled={loading}
             onClick={handleDraftSave}
           >
-            Save Team Member
+            {loading ? (
+              <ClipLoader size={25} color="white" />
+            ) : (
+              "Save Team Member"
+            )}
           </Button>
         </div>
       </form>

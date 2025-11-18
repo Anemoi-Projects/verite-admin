@@ -3,7 +3,6 @@ import { Pencil, Trash2, Eye, ChevronDown, MoreHorizontal } from "lucide-react";
 
 import React, { Suspense, useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import * as Dialog from "@radix-ui/react-dialog";
 
 import { toast } from "sonner";
 // import { useToast } from "@/hooks/use-toast";
@@ -46,6 +45,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Page = () => {
   const [authToken, setAuthToken] = useState("");
@@ -408,43 +416,26 @@ const Page = () => {
       </Sheet>
 
       {/* ..........delete modal........ */}
-      <Dialog.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-          <Dialog.Content
-            // minwidth="450px"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 min-w-[550px]"
-          >
-            <Dialog.Title className="font-bold text-lg text-center my-5 text-black">
-              Delete Team Member
-            </Dialog.Title>
-            <Dialog.Description
-              className="text-red-500 text-center text-sm mb-4"
-              size="2"
-              mb="4"
-            >
-              Are you sure you want to delete this Team Member?
-            </Dialog.Description>
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Team Member Deletion</DialogTitle>
+            <DialogDescription>
+              Deleting this team member will permanently erase their profile and
+              associated details. Proceed with caution.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="flex items-center justify-center my-5 gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                }}
-                className="bg-[#5c5774]   text-white px-4 py-1.5 text-sm rounded"
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-gradient-to-r  from-[#8d0808] to-red-600 cursor-pointer hover:bg-gradient-to-l  text-white px-4 py-1.5 text-sm rounded"
-                onClick={deleteItem}
-              >
-                Delete
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="button" onClick={deleteItem} variant={"destructive"}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };

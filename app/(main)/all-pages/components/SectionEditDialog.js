@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import axios from "axios";
 import { useTheme } from "next-themes";
+import { ClipLoader } from "react-spinners";
 
 export function SectionEditDialog({ section, getSinglePageData }) {
   const { theme } = useTheme();
@@ -28,6 +29,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
   const [originalData, setOriginalData] = useState(section);
   const [error, setError] = useState("");
   const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (window.localStorage.getItem("authToken")) {
@@ -45,9 +47,6 @@ export function SectionEditDialog({ section, getSinglePageData }) {
     }
   }, [open, section, theme]);
 
-  // --------------------------
-  // Track changes
-  // --------------------------
   const hasChanged = () => {
     return (
       formData.headline !== originalData.headline ||
@@ -79,19 +78,19 @@ export function SectionEditDialog({ section, getSinglePageData }) {
     setMediaPreview(URL.createObjectURL(file));
   };
 
-  // --------------------------
-  // Save Only Changed Data
-  // --------------------------
   const handleSave = async () => {
+    setLoading(true);
     if (!hasChanged()) {
       toast.error("No changes made.");
       setOpen(false);
+      setLoading(false);
       return;
     }
 
     if (!formData.headline?.trim()) {
       toast.error("Headline is required.");
       setError("Headline is required.");
+      setLoading(false);
       return;
     }
 
@@ -109,15 +108,10 @@ export function SectionEditDialog({ section, getSinglePageData }) {
     appendIfChanged("ctaButton");
     appendIfChanged("ctaLink");
 
-    // --------------------------
-    // MEDIA — send only FILE
-    // Key must be: sectionBackground
-    // --------------------------
     if (selectedFile) {
       data.append("sectionBackground", selectedFile);
     }
 
-    // FormData is empty → nothing to send
     if ([...data.keys()].length === 0) {
       toast.error("No changes detected.");
       return;
@@ -138,14 +132,15 @@ export function SectionEditDialog({ section, getSinglePageData }) {
         toast("Section updated successfully", {
           className: "bg-green-700 text-white",
         });
-
         setOpen(false);
         getSinglePageData();
+        setLoading(false);
       }
     } catch (err) {
       toast.error("Failed to update section.");
       setError(err.message || "Something went wrong.");
       setOpen(false);
+      setLoading(false);
     }
   };
 
@@ -170,7 +165,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
         </SheetHeader>
 
         <div className="space-y-4  p-5 pt-0">
-          <label className="text-sm font-medium text-gray-900">Headline</label>
+          <label className="text-sm font-medium ">Headline</label>
           <Input
             name="headline"
             value={formData.headline || ""}
@@ -180,9 +175,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
           {section?.subHeadline && (
             <div>
-              <label className="text-sm font-medium text-gray-900">
-                SubHeadline
-              </label>
+              <label className="text-sm font-medium ">SubHeadline</label>
               <Textarea
                 name="subHeadline"
                 value={formData.subHeadline || ""}
@@ -194,9 +187,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
           {section?.description && (
             <>
-              <label className="text-sm font-medium text-gray-900">
-                Description
-              </label>
+              <label className="text-sm font-medium ">Description</label>
               <Textarea
                 name="description"
                 value={formData.description || ""}
@@ -208,9 +199,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
           {section?.ctaButton && (
             <>
-              <label className="text-sm font-medium text-gray-900">
-                CTA Button
-              </label>
+              <label className="text-sm font-medium ">CTA Button</label>
               <Input
                 name="ctaButton"
                 value={formData.ctaButton || ""}
@@ -222,9 +211,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
           {section?.ctaLink && (
             <>
-              <label className="text-sm font-medium text-gray-900">
-                CTA Link
-              </label>
+              <label className="text-sm font-medium ">CTA Link</label>
               <Input
                 name="ctaLink"
                 value={formData.ctaLink || ""}
@@ -236,9 +223,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
           {mediaPreview && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-900">
-                Section Media
-              </label>
+              <label className="text-sm font-medium ">Section Media</label>
 
               <div className="relative w-64 h-36">
                 {selectedFile?.type?.startsWith("video") ||
@@ -269,7 +254,9 @@ export function SectionEditDialog({ section, getSinglePageData }) {
         </div>
 
         <SheetFooter className="mt-6">
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave} className={"theme-button"}>
+            {loading ? <ClipLoader size={25} color="white" /> : "Save"}
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
