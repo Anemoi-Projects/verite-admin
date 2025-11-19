@@ -255,11 +255,11 @@ const Page = () => {
           </div>
         </div>
 
-        <div className="mt-5">
+        {/* <div className="mt-5">
           <h2 className="text-lg font-medium mb-4">Header/ Footer</h2>
-          {/* .......header/footer table........... */}
+          
           <TableHF />
-        </div>
+        </div> */}
       </div>
     </div>
   );

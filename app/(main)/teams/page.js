@@ -226,7 +226,7 @@ const Page = () => {
   return (
     <main className="flex-1 overflow-auto">
       <div className="flex justify-between p-5 border-b">
-        <h1 className="text-2xl font-medium">Teams</h1>
+        <h1 className="text-2xl font-medium">Teams &amp; Partners</h1>
         <ThemeToggler />
       </div>
       <section className="p-6">
