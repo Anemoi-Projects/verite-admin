@@ -1,28 +1,15 @@
 "use client";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
-
-import { useEffect, useState } from "react";
-import axios from "axios";
-import * as Dialog from "@radix-ui/react-dialog";
-
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ThemeToggler from "@/common-components/ThemeToggler";
 import { Button } from "@/components/ui/button";
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,13 +18,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
-// import ResourceCategoryForm from "./ResourceCategoryForm";
-// import AdvisoryForm from "./AdvisoryForm";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import axios from "axios";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 const Page = ({ selectedLanguage }) => {
   const [authToken, setAuthToken] = useState("");
   const [showPanel, setShowPanel] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -45,10 +56,10 @@ const Page = ({ selectedLanguage }) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [allTableData, setAllTableData] = useState([]);
-
   const [teamFormState, setTeamFormState] = useState({
-    ID: null,
     state: "add",
+    ID: null,
+    data: null,
   });
   const columns = [
     {
@@ -57,21 +68,16 @@ const Page = ({ selectedLanguage }) => {
       cell: ({ row }) => row.index + 1,
     },
     {
-      accessorKey: "name",
-      header: " Name",
-      cell: ({ row }) =>
-        row?.original?.firstName
-          ? row?.original?.firstName && row?.original?.lastName
-            ? row?.original?.firstName + " " + row?.original?.lastName
-            : "N/A"
-          : "N/A",
+      accessorKey: "fullName",
+      header: "Name",
+      cell: ({ row }) => row?.original?.fullName ?? "N/A",
     },
 
     {
-      accessorKey: "emailID",
+      accessorKey: "emailId",
       header: "Email",
       cell: ({ row }) =>
-        row?.original?.emailID ? row?.original?.emailID : "N/A",
+        row?.original?.emailId ? row?.original?.emailId : "N/A",
     },
     {
       accessorKey: "actions",
@@ -85,18 +91,19 @@ const Page = ({ selectedLanguage }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {/* <DropdownMenuItem
+              <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
                   setShowPanel(true);
                   setTeamFormState({
-                    state: "edit",
+                    state: "view",
                     ID: row.original._id,
+                    data: row.original,
                   });
                 }}
               >
-                View/Edit
-              </DropdownMenuItem> */}
+                View
+              </DropdownMenuItem>
 
               <DropdownMenuItem
                 className="cursor-pointer"
@@ -164,7 +171,6 @@ const Page = ({ selectedLanguage }) => {
     }
   }, [selectedLanguage]);
   const deleteItem = () => {
-    console.log(teamFormState, "bug");
     let config = {
       method: "delete",
       maxBodyLength: Infinity,
@@ -195,24 +201,12 @@ const Page = ({ selectedLanguage }) => {
   };
 
   return (
-    <div className="p-6 space-y-10">
-      {/* First Table Section */}
-      <section>
-        <div className="flex justify-between my-3">
-          <h2 className="text-2xl font-semibold mb-4 text-[#0D0E52]">CRM</h2>
-          <div>
-            {" "}
-            {/* <button
-              onClick={() => {
-                setShowPanel(true);
-                setShowForm({ id: null, state: "add" });
-              }}
-              className="bg-gradient-to-r  from-[#140B49] to-[#140B49]/[0.72] text-white px-8 py-2 rounded-lg   block cursor-pointer"
-            >
-              Add Advisory Member
-            </button> */}
-          </div>
-        </div>
+    <main className="flex-1 overflow-auto">
+      <div className="flex justify-between p-5 border-b">
+        <h1 className="text-2xl font-medium">Messages</h1>
+        <ThemeToggler />
+      </div>
+      <section className="p-5">
         <div className="flex items-center py-4">
           <Input
             placeholder="Search..."
@@ -299,98 +293,114 @@ const Page = ({ selectedLanguage }) => {
             </TableBody>
           </Table>
         </div>
+        <div className="flex items-center justify-between  flex-row gap-2 py-4">
+          <div className="text-xs text-muted-foreground">
+            Showing{" "}
+            <strong>
+              {table.getPaginationRowModel().rows.length > 0
+                ? table.getState().pagination.pageIndex *
+                    table.getState().pagination.pageSize +
+                  1
+                : 0}
+            </strong>
+            –
+            <strong>
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) *
+                  table.getState().pagination.pageSize,
+                table.getFilteredRowModel().rows.length
+              )}
+            </strong>{" "}
+            of <strong>{table.getFilteredRowModel().rows.length}</strong>{" "}
+            messages
+          </div>
+          <div className="flex flex-row gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </section>
-
-      {/* .........add Resource panel...... */}
-      <Dialog.Root
-        open={showPanel}
-        onOpenChange={() => {
-          setShowPanel(false);
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
-
-          <Dialog.Content className="fixed right-0 top-0 h-full w-full sm:w-2/5 bg-white border-l shadow-lg z-50 p-6 overflow-y-auto transition-all animate-in slide-in-from-right">
-            <div className="flex justify-between items-center mb-4 border-b-4 pb-2 border-[#140B49]">
-              <div className="flex justify-center items-center gap-2">
-                {" "}
-                <Dialog.Close
-                  className="rounded-full p-1 hover:bg-gray-100 transition"
-                  aria-label="Close panel"
-                >
-                  <span
-                    className="w-5 h-5 text-gray-500 hover:text-gray-700 transition"
-                    strokeWidth={2.5}
-                  >
-                    x
-                  </span>
-                </Dialog.Close>
-                <Dialog.Title className="text-lg font-semibold text-black">
-                  {showForm?.state?.toUpperCase()} Advisory Team Member
-                </Dialog.Title>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setShowPanel(false);
-                  }}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
-                </button>
-              </div>
+      {/* .........Message Data...... */}
+      <Sheet open={showPanel} onOpenChange={setShowPanel}>
+        <SheetContent
+          side="right"
+          className="w-full sm:w-[450px] max-h-screen overflow-y-auto p-6"
+        >
+          <SheetHeader className={"p-0 py-4"}>
+            <SheetTitle className="text-lg font-semibold ">
+              Message Details
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor="fullName" className={"mb-3"}>
+                Full Name
+              </Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={teamFormState?.data?.fullName ?? "NA"}
+              />
             </div>
-            {/* <AdvisoryForm
-              teamFormState={teamFormState}
-              getAllTeamMembers={getAllAdvisoryMembers}
-              setShowTeamPanel={setShowPanel}
-              selectedLanguage={selectedLanguage}
-            /> */}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            <div>
+              <Label htmlFor="emailId" className={"mb-3"}>
+                Email ID
+              </Label>
+              <Input
+                id="emailId"
+                type="text"
+                value={teamFormState?.data?.emailId ?? "NA"}
+              />
+            </div>
+            <div>
+              <Label htmlFor="message" className={"mb-3"}>
+                Message
+              </Label>
+              <Textarea
+                id="message"
+                type="text"
+                value={teamFormState?.data?.message ?? "NA"}
+              />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ..........delete modal........ */}
-      <Dialog.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-          <Dialog.Content
-            // minwidth="450px"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 min-w-[550px]"
-          >
-            <Dialog.Title className="font-bold text-lg text-center my-5 text-black">
-              Delete Enquiry
-            </Dialog.Title>
-            <Dialog.Description
-              className="text-red-500 text-center text-sm mb-4"
-              size="2"
-              mb="4"
-            >
-              Are you sure you want to delete this Enquiry?
-            </Dialog.Description>
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Message Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this message?
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="flex items-center justify-center my-5 gap-2">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                }}
-                className="bg-[#5c5774]   text-white px-4 py-1.5 text-sm rounded"
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-gradient-to-r  from-[#8d0808] to-red-600 cursor-pointer hover:bg-gradient-to-l  text-white px-4 py-1.5 text-sm rounded"
-                onClick={deleteItem}
-              >
-                Delete
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="button" onClick={deleteItem} variant={"destructive"}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </main>
   );
 };
 export default Page;
