@@ -157,45 +157,6 @@ const TableHF = () => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between  flex-row gap-2 py-4">
-        <div className="text-xs text-muted-foreground">
-          Showing{" "}
-          <strong>
-            {table.getPaginationRowModel().rows.length > 0
-              ? table.getState().pagination.pageIndex *
-                  table.getState().pagination.pageSize +
-                1
-              : 0}
-          </strong>
-          –
-          <strong>
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) *
-                table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}
-          </strong>{" "}
-          of <strong>{table.getFilteredRowModel().rows.length}</strong> drafts
-        </div>
-        <div className="flex flex-row gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
     </>
   );
 };

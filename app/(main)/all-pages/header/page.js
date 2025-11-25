@@ -1,28 +1,7 @@
 "use client";
-import { Pencil, Trash2, Eye, ChevronDown, MoreHorizontal } from "lucide-react";
 
-import React, { Suspense, useEffect, useState, useMemo } from "react";
-import axios from "axios";
-import * as Dialog from "@radix-ui/react-dialog";
-// import FAQForm from "./components/FAQForm";
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ThemeToggler from "@/common-components/ThemeToggler";
 import { Button } from "@/components/ui/button";
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,20 +10,39 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import axios from "axios";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import HeaderFooterForm from "../components/HeaderFooterForm";
-import RegionStore from "@/store/RegionStore";
-import RegionSelecter from "@/common-components/RegionSelecter";
 
 const Page = () => {
-  const appEnv = process.env.APP_ENV;
-  console.log(appEnv, "environment");
+  const router = useRouter();
   const [allButtons, setAllButtons] = useState([]);
   const [buttonSorting, setButtonSorting] = useState([]);
   const [buttonFilter, setButtonFilter] = useState("");
-
-  const router = useRouter();
-  const { region, setRegion } = RegionStore();
   const [headerFooterFormState, setHeaderFooterFormState] = useState({
     linkID: null,
     state: "add",
@@ -55,48 +53,14 @@ const Page = () => {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showHeaderFooterPanel, setHeaderFooterPanel] = useState(false);
   const [allLinks, setAllLinks] = useState([]);
 
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-  };
-
-  const deleteFAQ = () => {
-    let config = {
-      method: "delete",
-      maxBodyLength: Infinity,
-      url: `${process.env.apiURL}/api/v1/faq/deleteFAQ?id=${headerFooterFormState.linkID}`,
-      headers: {},
-    };
-
-    axios
-      .request(config)
-      .then((response) => {
-        // console.log(JSON.stringify(response.data));
-        setHeaderFooterFormState((prev) => {
-          return { linkID: null, state: "add" };
-        });
-        setShowDeleteModal(false);
-        toast.success("FAQ deleted successfully", {
-          className: "bg-green-700 text-white",
-        });
-        getAllLinks();
-      })
-      .catch((error) => {
-        setShowDeleteModal(false);
-        toast.error("Error while deleting FAQ");
-        console.log(error);
-      });
-  };
   const getAllLinks = () => {
-    let url = `${process.env.apiURL}/api/v1/contents/getHeader?lang=` + region;
-
     let config = {
+      url: `${process.env.apiURL}/api/v1/contents/getHeader`,
       method: "get",
       maxBodyLength: Infinity,
-      url,
       headers: {},
     };
 
@@ -105,7 +69,7 @@ const Page = () => {
       .then((response) => {
         // console.log(JSON.stringify(response.data));
         setAllLinks(response.data.data?.links);
-        setAllButtons(response.data.data?.ctaButton);
+        setAllButtons(response.data.data?.ctaButtons);
       })
       .catch((error) => {
         console.log(error);
@@ -158,23 +122,13 @@ const Page = () => {
               >
                 Edit
               </DropdownMenuItem>
-              {/* <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setHeaderFooterFormState((prev) => {
-                    return { linkID: row?.original?._id, state: "delete" };
-                  });
-                  setShowDeleteModal(true);
-                }}
-              >
-                Delete
-              </DropdownMenuItem> */}
             </DropdownMenuContent>
           </DropdownMenu>
         </>
       ),
     },
   ];
+
   const buttonColumns = [
     {
       id: "srNo",
@@ -189,12 +143,7 @@ const Page = () => {
     {
       accessorKey: "url",
       header: "URL",
-      cell: ({ row }) =>
-        row.original?.url
-          ? row.original?.url
-          : row.original?.externalURL
-          ? row.original?.externalURL
-          : "N/A",
+      cell: ({ row }) => row.original?.url ?? "N/A",
     },
     {
       accessorKey: "actions",
@@ -250,6 +199,7 @@ const Page = () => {
       globalFilter,
     },
   });
+
   const buttonTable = useReactTable({
     data: allButtons,
     columns: buttonColumns,
@@ -266,37 +216,31 @@ const Page = () => {
   });
 
   useEffect(() => {
-    if (region) {
-      getAllLinks();
-    }
-  }, [region]);
+    getAllLinks();
+  }, []);
   return (
     <>
-      <main className="flex-1 overflow-auto bg-white text-black">
-        <div className="flex items-center border-b py-4 pl-6 gap-x-5  border-gray-200">
-          <button
-            onClick={() => router.push("/all-pages")}
-            className="text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-medium   text-[#140B49] ">
-            Header Links/Buttons
-          </h1>
-        </div>
-        <section className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            {" "}
-            <h1 className="text-xl font-medium   text-[#140B49] ">Links</h1>
-            <div className="flex gap-4  items-center">
-              <RegionSelecter setRegion={setRegion} region={region} />
-            </div>
+      <main className="flex-1 overflow-auto">
+        <div className="flex justify-between items-center border-b p-5">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => router.push("/all-pages")}
+              className="text-sm px-4 py-2 "
+            >
+              ← Back
+            </Button>
+            <h1 className="text-2xl font-medium ">Header Links/Buttons</h1>
           </div>
 
-          <div className=" mb-4 ">
+          <ThemeToggler />
+        </div>
+
+        <section className="p-6">
+          <h1 className="text-xl font-medium">Links</h1>
+          <div className="my-4">
             {/* .............table........... */}
 
-            <div className="w-full gap-4  p-3 border border-slate-200 rounded overflow-hidden">
+            <div className="w-full gap-4 p-5 border rounded overflow-hidden">
               <div className="flex items-center py-4">
                 <Input
                   placeholder="Search..."
@@ -436,13 +380,10 @@ const Page = () => {
         {/* ................button table................ */}
 
         <section className="p-6 mt-5">
-          <div className="flex justify-between items-center mb-4">
-            {" "}
-            <h1 className="text-xl font-medium   text-[#140B49] "> Buttons</h1>
-          </div>
+          <h1 className="text-xl font-medium"> Buttons</h1>
 
-          <div className=" mb-4 ">
-            <div className="w-full gap-4  p-3 border border-slate-200 rounded overflow-hidden">
+          <div className=" my-4 ">
+            <div className="w-full gap-4 p-5 border rounded overflow-hidden">
               <div className="flex items-center py-4">
                 <Input
                   placeholder="Search..."
@@ -570,96 +511,27 @@ const Page = () => {
           </div>
         </section>
 
-        {/* .........header footer panel...... */}
-        <Dialog.Root
-          open={showHeaderFooterPanel}
-          onOpenChange={() => {
-            setHeaderFooterPanel(false);
-          }}
-        >
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
+        {/* Panel to Edit Header links */}
+        <Sheet open={showHeaderFooterPanel} onOpenChange={setHeaderFooterPanel}>
+          <SheetContent
+            side="right"
+            className="h-full w-full sm:w-3/5 p-6 overflow-y-auto animate-in slide-in-from-right"
+          >
+            {/* HEADER */}
+            <SheetHeader className={"p-0"}>
+              <SheetTitle className="text-lg font-semibold uppercase">
+                {headerFooterFormState?.state?.toUpperCase()} header{" "}
+                {headerFooterFormState?.state?.type}
+              </SheetTitle>
+            </SheetHeader>
 
-            <Dialog.Content className="fixed right-0 top-0 h-full w-full sm:w-2/5 bg-white border-l shadow-lg z-50 p-6 overflow-y-auto transition-all animate-in slide-in-from-right">
-              <div className="flex justify-between items-center mb-4 border-b-4 pb-2 border-[#140B49]">
-                <div className="flex justify-center items-center gap-2">
-                  <Dialog.Close
-                    className="rounded-full p-1 hover:bg-gray-100 transition"
-                    aria-label="Close panel"
-                  >
-                    <span
-                      className="w-5 h-5 text-gray-500 hover:text-gray-700 transition"
-                      strokeWidth={2.5}
-                    >
-                      x
-                    </span>
-                  </Dialog.Close>
-                  <Dialog.Title className="text-lg font-semibold text-black">
-                    {headerFooterFormState?.state?.toUpperCase()} header{" "}
-                    {headerFooterFormState?.state?.type}
-                  </Dialog.Title>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setHeaderFooterPanel(false);
-                    }}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-
-              <HeaderFooterForm
-                headerFooterFormState={headerFooterFormState}
-                getAllLinks={getAllLinks}
-                setHeaderFooterPanel={setHeaderFooterPanel}
-                selectedLanguage={region}
-              />
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
-
-        {/* ..........delete modal........ */}
-        <Dialog.Root open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
-            <Dialog.Content
-              // minwidth="450px"
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-lg z-50 min-w-[550px]"
-            >
-              <Dialog.Title className="font-bold text-lg text-center my-5 text-black">
-                Delete FAQ
-              </Dialog.Title>
-              <Dialog.Description
-                className="text-red-500 text-center text-sm mb-4"
-                size="2"
-                mb="4"
-              >
-                Are you sure you want to delete this FAQ?
-              </Dialog.Description>
-
-              <div className="flex items-center justify-center my-5 gap-2">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                  }}
-                  className="bg-[#5c5774]   text-white px-4 py-1.5 text-sm rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="bg-gradient-to-r  from-[#8d0808] to-red-600 cursor-pointer hover:bg-gradient-to-l  text-white px-4 py-1.5 text-sm rounded"
-                  onClick={deleteFAQ}
-                >
-                  Delete
-                </button>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+            <HeaderFooterForm
+              headerFooterFormState={headerFooterFormState}
+              getAllLinks={getAllLinks}
+              setHeaderFooterPanel={setHeaderFooterPanel}
+            />
+          </SheetContent>
+        </Sheet>
       </main>
     </>
   );

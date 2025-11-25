@@ -1,10 +1,8 @@
 "use client";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 import * as Dialog from "@radix-ui/react-dialog";
-// import FAQForm from "./components/FAQForm";
 import {
   Table,
   TableBody,
@@ -34,14 +32,16 @@ import FooterForm from "./FooterForm";
 import RegionStore from "@/store/RegionStore";
 import RegionSelecter from "@/common-components/RegionSelecter";
 import { useRouter } from "next/navigation";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import ThemeToggler from "@/common-components/ThemeToggler";
 
 const Page = () => {
-  const { region, setRegion } = RegionStore();
-  const [headerFooterFormState, setHeaderFooterFormState] = useState({
-    linkID: null,
-    state: "add",
-    type: "link",
-  });
+  const router = useRouter();
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -49,19 +49,17 @@ const Page = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [showHeaderFooterPanel, setHeaderFooterPanel] = useState(false);
   const [allLinks, setAllLinks] = useState([]);
-  const router = useRouter();
-
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-  };
+  const [headerFooterFormState, setHeaderFooterFormState] = useState({
+    linkID: null,
+    state: "add",
+    type: "link",
+  });
 
   const getAllLinks = () => {
-    let url = `${process.env.apiURL}/api/v1/contents/getFooter?lang=${region}`;
-
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url,
+      url: `${process.env.apiURL}/api/v1/contents/getFooter`,
       headers: {},
     };
 
@@ -154,37 +152,30 @@ const Page = () => {
   });
 
   useEffect(() => {
-    if (region) {
-      getAllLinks();
-    }
-  }, [region]);
+    getAllLinks();
+  }, []);
   return (
     <>
-      <main className="flex-1 overflow-auto bg-white text-black">
-        <div className="flex items-center border-b py-4 pl-6 gap-x-5 border-gray-200">
-          <button
-            onClick={() => router.push("/all-pages")}
-            className="text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-medium   text-[#140B49] ">
-            Footer Sections
-          </h1>
-        </div>
-        <section className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            {" "}
-            <h1 className="text-xl font-medium   text-[#140B49] ">Sections</h1>
-            <div className="flex gap-4  items-center">
-              <RegionSelecter region={region} setRegion={setRegion} />
-            </div>
+      <main className="flex-1 overflow-auto">
+        <div className="flex justify-between items-center border-b p-5">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => router.push("/all-pages")}
+              className="text-sm px-4 py-2 "
+            >
+              ← Back
+            </Button>
+            <h1 className="text-2xl font-medium ">Footer Sections</h1>
           </div>
 
-          <div className=" mb-4 ">
-            {/* .............table........... */}
+          <ThemeToggler />
+        </div>
+        <section className="p-6">
+          <h1 className="text-xl font-medium">Sections</h1>
 
-            <div className="w-full gap-4  p-3 border border-slate-200 rounded overflow-hidden">
+          <div className=" my-4 ">
+            {/* .............table........... */}
+            <div className="w-full gap-4  p-3 border rounded overflow-hidden">
               <div className="flex items-center py-4">
                 <Input
                   placeholder="Search..."
@@ -321,57 +312,26 @@ const Page = () => {
           </div>
         </section>
 
-        {/* .........header footer panel...... */}
-        <Dialog.Root
-          open={showHeaderFooterPanel}
-          onOpenChange={() => {
-            setHeaderFooterPanel(false);
-          }}
-        >
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
+        {/* Panel to Edit Header links */}
+        <Sheet open={showHeaderFooterPanel} onOpenChange={setHeaderFooterPanel}>
+          <SheetContent
+            side="right"
+            className="h-full w-full sm:w-3/5 p-6 overflow-y-auto animate-in slide-in-from-right"
+          >
+            <SheetHeader>
+              <SheetTitle className="text-lg font-semibold uppercase">
+                {headerFooterFormState?.state?.toUpperCase()} header{" "}
+                {headerFooterFormState?.state?.type}
+              </SheetTitle>
+            </SheetHeader>
 
-            <Dialog.Content className="fixed right-0 top-0 h-full w-full sm:w-1/3 bg-white border-l shadow-lg z-50 p-6 overflow-y-auto transition-all animate-in slide-in-from-right">
-              <div className="flex justify-between items-center mb-4 border-b-4 pb-2 border-[#140B49]">
-                <div className="flex justify-center items-center gap-2">
-                  <Dialog.Close
-                    className="rounded-full p-1 hover:bg-gray-100 transition"
-                    aria-label="Close panel"
-                  >
-                    <span
-                      className="w-5 h-5 text-gray-500 hover:text-gray-700 transition"
-                      strokeWidth={2.5}
-                    >
-                      x
-                    </span>
-                  </Dialog.Close>
-                  <Dialog.Title className="text-lg font-semibold text-black">
-                    {headerFooterFormState?.state?.toUpperCase()} Footer{" "}
-                    {headerFooterFormState?.state?.type}
-                  </Dialog.Title>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setHeaderFooterPanel(false);
-                    }}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-
-              <FooterForm
-                headerFooterFormState={headerFooterFormState}
-                getAllLinks={getAllLinks}
-                setHeaderFooterPanel={setHeaderFooterPanel}
-                selectedLanguage={region}
-              />
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+            <FooterForm
+              headerFooterFormState={headerFooterFormState}
+              getAllLinks={getAllLinks}
+              setHeaderFooterPanel={setHeaderFooterPanel}
+            />
+          </SheetContent>
+        </Sheet>
       </main>
     </>
   );
