@@ -72,7 +72,7 @@ const Page = () => {
       </div>
       <section className="p-6">
         <div className="space-y-6">
-          {singlePageData?.sections.map((section, index) => (
+          {singlePageData?.sections?.map((section, index) => (
             <div
               key={section._id}
               className="border p-5 rounded-md shadow-sm space-y-4"

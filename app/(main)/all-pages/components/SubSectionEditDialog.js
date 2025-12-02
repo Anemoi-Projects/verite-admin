@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "sonner";
+import { ClipLoader } from "react-spinners";
+import { useTheme } from "next-themes";
+
 import {
   Sheet,
   SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from "@/components/ui/sheet";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-import axios from "axios";
-import { toast } from "sonner";
 
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,8 +30,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { ClipLoader } from "react-spinners";
-import { useTheme } from "next-themes";
 
 const schema = z.object({
   heading: z.string().min(1, "Heading is required"),
@@ -43,26 +42,27 @@ const schema = z.object({
 export function SubsectionEditDialog({ subsection, getSinglePageData }) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [authToken, setAuthToken] = useState("");
-  const [mediaPreview, setMediaPreview] = useState(subsection?.subSectionMedia);
-  const [mediaType, setMediaType] = useState(subsection?.mediaType || "image");
+  const [loading, setLoading] = useState(false);
+
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaType, setMediaType] = useState("image");
   const [selectedFile, setSelectedFile] = useState(null);
   const [originalData, setOriginalData] = useState(subsection);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) setAuthToken(token);
+    const t = localStorage.getItem("authToken");
+    if (t) setAuthToken(t);
   }, []);
 
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      heading: subsection.heading || "",
-      subHeading: subsection.subHeading || "",
-      description: subsection.description || "",
-      ctaButton: subsection.ctaButton || "",
-      ctaLink: subsection.ctaLink || "",
+      heading: "",
+      subHeading: "",
+      description: "",
+      ctaButton: "",
+      ctaLink: "",
     },
   });
 
@@ -84,19 +84,40 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
   }, [open, subsection, form]);
 
   const handleMediaChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const isVideo = file.type.startsWith("video");
-    const maxSizeMB = 10;
-    if (isVideo && file.size > maxSizeMB * 1024 * 1024) {
-      toast.error("Video must be less than 10 MB.");
+
+    if (isVideo) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Video must be less than 10 MB.");
+        return;
+      }
+      setSelectedFile(file);
+      setMediaType("video");
+      setMediaPreview(URL.createObjectURL(file));
       return;
     }
 
-    setSelectedFile(file);
-    setMediaType(file.type);
-    setMediaPreview(URL.createObjectURL(file));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      if (img.width !== img.height) {
+        toast.error("Image must be perfectly square (equal width and height).");
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      setSelectedFile(file);
+      setMediaType("image");
+      setMediaPreview(url);
+    };
+    img.onerror = () => {
+      toast.error("Invalid image file.");
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
 
   const hasChanged = (values) => {
@@ -112,8 +133,9 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
 
   const onSubmit = async (values) => {
     setLoading(true);
+
     if (!hasChanged(values)) {
-      toast.error("No changes made.");
+      toast.error("No changes detected.");
       setOpen(false);
       setLoading(false);
       return;
@@ -138,7 +160,7 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
     }
 
     if ([...data.keys()].length === 0) {
-      toast.error("No changes to update.");
+      toast.error("No updates detected.");
       setLoading(false);
       return;
     }
@@ -154,13 +176,13 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
           },
         }
       );
+
       if (res.data.success) {
         toast.success("Subsection updated successfully", {
           className: "bg-green-700 text-white",
         });
-
-        setOpen(false);
         getSinglePageData();
+        setOpen(false);
       }
     } catch (err) {
       toast.error("Failed to update subsection.");
@@ -172,8 +194,8 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="my-5 theme-button">
-          Edit SubSection
+        <Button variant="outline" className="theme-button my-5">
+          Edit Subsection
         </Button>
       </SheetTrigger>
 
@@ -188,7 +210,7 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 p-5"
+            className="space-y-5 p-5"
           >
             {/* Heading */}
             <FormField
@@ -198,23 +220,23 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                 <FormItem>
                   <FormLabel>Heading</FormLabel>
                   <FormControl>
-                    <Input placeholder="Heading" {...field} />
+                    <Input {...field} placeholder="Heading" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* SubHeading */}
+            {/* SubHeading (only if exists) */}
             {subsection.subHeading && (
               <FormField
                 control={form.control}
                 name="subHeading"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SubHeading</FormLabel>
+                    <FormLabel>Sub Heading</FormLabel>
                     <FormControl>
-                      <Input placeholder="SubHeading" {...field} />
+                      <Input {...field} placeholder="Sub Heading" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,7 +253,7 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Description" {...field} />
+                      <Textarea {...field} placeholder="Description" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,7 +270,7 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                   <FormItem>
                     <FormLabel>CTA Button</FormLabel>
                     <FormControl>
-                      <Input placeholder="ctaButton" {...field} />
+                      <Input {...field} placeholder="CTA Text" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -265,7 +287,7 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                   <FormItem>
                     <FormLabel>CTA Link</FormLabel>
                     <FormControl>
-                      <Input placeholder="ctaLink" {...field} />
+                      <Input {...field} placeholder="CTA Link" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,12 +295,12 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
               />
             )}
 
-            {/* MEDIA */}
+            {/* MEDIA PREVIEW */}
             {mediaPreview && (
               <div className="space-y-2">
                 <FormLabel>Subsection Media</FormLabel>
 
-                <div className="relative w-64 h-36">
+                <div className="relative w-64 h-64">
                   {mediaType.startsWith("video") ? (
                     <video
                       src={mediaPreview}
@@ -288,7 +310,6 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                   ) : (
                     <img
                       src={mediaPreview}
-                      alt="Preview"
                       className="w-full h-full rounded border object-cover"
                     />
                   )}
@@ -299,13 +320,17 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                   accept="image/*,video/*"
                   onChange={handleMediaChange}
                 />
+
+                <p className="text-gray-400 text-sm">
+                  Image must be a <strong>perfect square</strong> (equal width &
+                  height).
+                </p>
               </div>
             )}
 
-            {/* Submit */}
-
-            <Button type="submit" className={"w-full theme-button"}>
-              {loading ? <ClipLoader size={25} color={"white"} /> : "Save"}
+            {/* Save Button */}
+            <Button type="submit" className="w-full theme-button">
+              {loading ? <ClipLoader size={25} color="white" /> : "Save"}
             </Button>
           </form>
         </Form>

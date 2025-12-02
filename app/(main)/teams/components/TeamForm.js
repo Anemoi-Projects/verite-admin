@@ -1,194 +1,210 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
 import { ClipLoader } from "react-spinners";
+import { toast } from "sonner";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  designation: z.string().min(1, "Designation is required"),
+  linkedIn: z.string().url("Enter a valid LinkedIn URL").optional(),
+  picture: z.any().optional(),
+});
+
 function TeamForm({
   teamFormState,
   getAllTeamMembers,
   setShowTeamPanel,
   selectedLanguage,
 }) {
-  const [authToken, setAuthToken] = useState("");
-  const [loading, setLoading] = useState(false);
   const { ID, state } = teamFormState;
   const isViewMode = state === "view";
-  const [imageFile, setImageFile] = useState(null);
+  const isAddMode = state === "add";
+  const isEditMode = state === "edit";
+
+  const [authToken, setAuthToken] = useState("");
+  const [loading, setLoading] = useState(false);
   const [initialData, setInitialData] = useState({});
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const form = useForm({
+    resolver: zodResolver(schema),
     defaultValues: {
       name: "",
       designation: "",
-      picture: null,
       linkedIn: "",
+      picture: null,
     },
   });
 
-  useEffect(() => {
-    if (window.localStorage.getItem("authToken")) {
-      setAuthToken(localStorage.getItem("authToken"));
+  const handleImageChange = (file) => {
+    if (!file) return;
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      if (img.width !== 150 || img.height !== 150) {
+        toast.error("Image must be exactly 150 × 150 pixels.");
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      setImageFile(file);
+      setImagePreview(url);
+    };
+
+    img.onerror = () => {
+      toast.error("Invalid image.");
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  };
+
+  const hasChanges = (vals) => {
+    return (
+      vals.name !== initialData.name ||
+      vals.designation !== initialData.designation ||
+      vals.linkedIn !== initialData.linkedIn ||
+      imageFile !== null
+    );
+  };
+
+  const handleSave = (values) => {
+    if (loading) return;
+    setLoading(true);
+
+    if (!values.name || !values.designation) {
+      toast.error("Name & Designation are required.");
+      setLoading(false);
+      return;
     }
-  }, [authToken]);
+
+    if (isEditMode && !hasChanges(values)) {
+      toast.error("No changes detected.");
+      setShowTeamPanel(false);
+      setLoading(false);
+      return;
+    }
+
+    const fd = new FormData();
+
+    if (isAddMode) {
+      fd.append("name", values.name);
+      fd.append("designation", values.designation);
+      if (values.linkedIn) fd.append("linkedIn", values.linkedIn);
+    }
+
+    if (isEditMode) {
+      if (values.name !== initialData.name) fd.append("name", values.name);
+
+      if (values.designation !== initialData.designation)
+        fd.append("designation", values.designation);
+
+      if (values.linkedIn !== initialData.linkedIn)
+        fd.append("linkedIn", values.linkedIn);
+    }
+
+    if (imageFile) {
+      fd.append("picture", imageFile);
+    }
+
+    const url = isAddMode
+      ? `${process.env.apiURL}/api/v1/team/createMember?type=internalTeam`
+      : `${process.env.apiURL}/api/v1/team/updateMember?id=${ID}&type=internalTeam`;
+
+    const method = isAddMode ? "post" : "put";
+
+    axios({
+      method,
+      url,
+      data: fd,
+      headers: {
+        Authorization: authToken,
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(() => {
+        toast.success(
+          `Team Member ${isAddMode ? "created" : "updated"} successfully!`,
+          { className: "bg-green-700 text-white" }
+        );
+
+        getAllTeamMembers();
+        setShowTeamPanel(false);
+      })
+      .catch(() => {
+        toast.error("Failed to save team member.");
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    if (state === "add") {
+    const t = localStorage.getItem("authToken");
+    if (t) setAuthToken(t);
+  }, []);
+
+  useEffect(() => {
+    if (isAddMode) {
       form.reset({
         name: "",
         designation: "",
-        picture: null,
         linkedIn: "",
+        picture: null,
       });
-    } else if ((state === "edit" || state === "view") && ID) {
-      const config = {
-        method: "get",
-        maxBodyLength: Infinity,
-        url: `${process.env.apiURL}/api/v1/team/getMembers?type=internalTeam&id=${ID}&lang=${selectedLanguage}`,
-        headers: {},
-      };
+      setInitialData({});
+      setImagePreview(null);
+      setImageFile(null);
+      return;
+    }
 
+    if ((isEditMode || isViewMode) && ID) {
       axios
-        .request(config)
-        .then((response) => {
-          const data = response.data.data;
-          form.reset({
-            name: data.name || "",
-            designation: data.designation || "",
-            picture: data.picture || null,
-            linkedIn: data.linkedIn || "",
-          });
+        .get(
+          `${process.env.apiURL}/api/v1/team/getMembers?type=internalTeam&id=${ID}&lang=${selectedLanguage}`
+        )
+        .then((res) => {
+          const data = res.data.data;
 
-          setInitialData({
+          const preset = {
             name: data.name || "",
             designation: data.designation || "",
-            picture: data.picture || null,
             linkedIn: data.linkedIn || "",
-          });
+            picture: data.picture || null,
+          };
+
+          form.reset(preset);
+          setInitialData(preset);
+          setImagePreview(data.picture || null);
+          setImageFile(null);
         })
-        .catch((error) => {
-          console.error("Failed to fetch Resource data", error);
+        .catch(() => {
+          toast.error("Failed to fetch team member details.");
         });
     }
   }, [state, ID]);
 
-  const handleDraftSave = () => {
-    if (loading) return;
-    setLoading(true);
-    const isEditMode = state === "edit";
-    const isAddMode = state === "add";
-
-    const { name, designation, picture, linkedIn } = form.getValues();
-
-    const formData = new FormData();
-    if (isEditMode) {
-      const hasChanges =
-        name !== initialData.name ||
-        designation !== initialData.designation ||
-        linkedIn !== initialData.linkedIn ||
-        (picture && picture.name !== initialData.picture);
-      if (!hasChanges) {
-        setLoading(false);
-        setShowTeamPanel(false);
-        toast.error("No changes detected.");
-        return;
-      }
-      if (name !== initialData.name) {
-        formData.append("name", name);
-      }
-
-      if (designation !== initialData.designation) {
-        formData.append("designation", designation);
-      }
-
-      if (linkedIn !== initialData.linkedIn && linkedIn) {
-        formData.append("linkedIn", linkedIn);
-      }
-    }
-
-    if (isAddMode) {
-      formData.append("name", name);
-      formData.append("designation", designation);
-
-      if (linkedIn) {
-        formData.append("linkedIn", linkedIn);
-      }
-    }
-
-    if (imageFile) {
-      formData.append("picture", imageFile);
-    }
-    const api_url = isAddMode
-      ? `${process.env.apiURL}/api/v1/team/createMember?type=internalTeam`
-      : `${process.env.apiURL}/api/v1/team/updateMember?id=${ID}&type=internalTeam`;
-    const method = isAddMode ? "post" : "put";
-
-    if (name && designation && picture) {
-      const config = {
-        method,
-        maxBodyLength: Infinity,
-        url: api_url,
-        headers: {
-          Authorization: authToken,
-          "Content-Type": "multipart/form-data",
-        },
-        data: formData,
-      };
-
-      axios
-        .request(config)
-        .then((response) => {
-          toast.success(
-            `Team Member ${isAddMode ? "created" : "updated"} successfully!`
-          );
-          getAllTeamMembers();
-          setShowTeamPanel(false);
-
-          if (isEditMode) {
-            setInitialData({
-              name,
-              designation,
-              linkedIn,
-              picture,
-            });
-          }
-
-          if (isAddMode) {
-            form.reset({
-              name: "",
-              designation: "",
-              linkedIn: "",
-              picture: null,
-            });
-          }
-        })
-        .catch((err) => {
-          toast("Failed to save Team Member", err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      toast(
-        "Please fill the mandatory fields (name & designation) before saving the Resource"
-      );
-    }
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+        {/* Name */}
         <FormField
           control={form.control}
           name="name"
@@ -207,38 +223,43 @@ function TeamForm({
           )}
         />
 
-        {initialData.picture && !imageFile ? (
-          <img className="w-[300px] h-[200px]" src={initialData.picture} />
-        ) : imageFile ? (
+        {/* Image Preview */}
+        {imagePreview && (
           <img
-            className="w-[300px] h-[200px]"
-            src={URL.createObjectURL(imageFile)}
+            src={imagePreview}
+            className="w-[150px] h-[150px] rounded border object-cover"
           />
-        ) : null}
+        )}
 
+        {/* Picture Upload */}
         <FormField
           control={form.control}
           name="picture"
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormLabel>Picture</FormLabel>
               <FormControl>
                 <Input
                   type="file"
-                  accept="application/picture"
+                  accept="image/*"
                   disabled={isViewMode}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    field.onChange(file);
-                    setImageFile(file);
+                    handleImageChange(file);
+                    form.setValue("picture", file);
                   }}
                 />
               </FormControl>
               <FormMessage />
+              <FormDescription>
+                Image you are uploading must be of size
+                <strong> 150 × 150</strong>.
+              </FormDescription>
             </FormItem>
           )}
         />
 
+        {/* Designation */}
         <FormField
           control={form.control}
           name="designation"
@@ -249,24 +270,7 @@ function TeamForm({
                 <Input
                   {...field}
                   disabled={isViewMode}
-                  placeholder="Enter designation"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="linkedIn"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>LinkedIn</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  disabled={isViewMode}
-                  placeholder="Enter LinkedIm URL"
+                  placeholder="Enter Designation"
                 />
               </FormControl>
               <FormMessage />
@@ -274,12 +278,32 @@ function TeamForm({
           )}
         />
 
-        <div className="mt-6 flex gap-x-5">
+        {/* LinkedIn */}
+        <FormField
+          control={form.control}
+          name="linkedIn"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>LinkedIn URL</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  disabled={isViewMode}
+                  placeholder="Enter LinkedIn URL"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* SAVE BUTTON */}
+        <div className="mt-6">
           <Button
-            type="submit"
             className="theme-button w-full"
-            disabled={loading}
-            onClick={handleDraftSave}
+            disabled={loading || isViewMode}
+            // onClick={handleSave}
+            type="submit"
           >
             {loading ? (
               <ClipLoader size={25} color="white" />
