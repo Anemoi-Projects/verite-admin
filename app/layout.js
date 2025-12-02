@@ -1,11 +1,10 @@
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata = {
   title: "AKTOrigins-Admin Panel",
-  description:
-    "Admin panel to manege the content of the website aktorigins.com",
+  description: "Admin panel to manege the content of the website aktorigins",
 };
 
 export default function RootLayout({ children }) {
