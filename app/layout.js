@@ -3,7 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata = {
-  title: "AKTOrigins-Admin Panel",
+  title: "AKTOrigins Admin Panel",
   description: "Admin panel to manege the content of the website aktorigins",
 };
 
