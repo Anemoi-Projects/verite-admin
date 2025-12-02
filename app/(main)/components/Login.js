@@ -118,7 +118,7 @@ const Login = () => {
                 alt="verite"
               />
 
-              <h2 className="text-3xl font-semibold ">Verite</h2>
+              <h2 className="text-3xl font-semibold ">AKTOrigins</h2>
             </div>
             <p className="text-lg mb-5">Welcome, please sign in.</p>
             <Form {...form}>
