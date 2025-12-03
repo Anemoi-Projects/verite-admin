@@ -101,11 +101,11 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
       img.onload = () => {
         if (
-          img.width !== imageSize?.imagewidth ||
+          img.width !== imageSize?.imageWidth ||
           img.height !== imageSize?.imageHeight
         ) {
           toast.error(
-            `Image must be exactly ${imageSize?.imagewidth}x${imageSize?.imageHeight}`
+            `Image must be exactly ${imageSize?.imageWidth}x${imageSize?.imageHeight}`
           );
           URL.revokeObjectURL(url);
           return;
@@ -299,7 +299,7 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
                   <p className="text-gray-400 text-sm">
                     Image you are uploading must be of size
-                    <strong>{` ${imageSize?.imagewidth}x${imageSize?.imageHeight}`}</strong>
+                    <strong>{` ${imageSize?.imageWidth}x${imageSize?.imageHeight}`}</strong>
                     .
                   </p>
                 </div>
