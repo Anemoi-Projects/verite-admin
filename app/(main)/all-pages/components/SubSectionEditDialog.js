@@ -30,6 +30,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { SUBSECTIONIMAGES } from "@/lib/sectionImages";
 
 const schema = z.object({
   heading: z.string().min(1, "Heading is required"),
@@ -49,7 +50,8 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
   const [mediaType, setMediaType] = useState("image");
   const [selectedFile, setSelectedFile] = useState(null);
   const [originalData, setOriginalData] = useState(subsection);
-
+  const imageSize =
+    SUBSECTIONIMAGES.find((item) => item?.subId === subsection?._id) || null;
   useEffect(() => {
     const t = localStorage.getItem("authToken");
     if (t) setAuthToken(t);
@@ -102,9 +104,15 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
 
     const img = new Image();
     const url = URL.createObjectURL(file);
+
     img.onload = () => {
-      if (img.width !== img.height) {
-        toast.error("Image must be perfectly square (equal width and height).");
+      if (
+        img.width !== imageSize?.imagewidth ||
+        img.height !== imageSize?.imageHeight
+      ) {
+        toast.error(
+          `Image must be exactly ${imageSize?.imagewidth}x${imageSize?.imageHeight}`
+        );
         URL.revokeObjectURL(url);
         return;
       }
@@ -322,8 +330,8 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
                 />
 
                 <p className="text-gray-400 text-sm">
-                  Image must be a <strong>perfect square</strong> (equal width &
-                  height).
+                  Image you are uploading must be of size
+                  <strong>{` ${imageSize?.imagewidth}x${imageSize?.imageHeight}`}</strong>
                 </p>
               </div>
             )}

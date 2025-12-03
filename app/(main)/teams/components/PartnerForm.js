@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
-import { toast } from "sonner";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ClipLoader } from "react-spinners";
@@ -136,7 +136,7 @@ function PartnerForm({ teamFormState, getAllTeamMembers, setShowTeamPanel }) {
 
       axios
         .request(config)
-        .then((response) => {
+        .then(() => {
           toast.success(
             `Partner ${isAddMode ? "created" : "updated"} successfully!`
           );
@@ -217,6 +217,10 @@ function PartnerForm({ teamFormState, getAllTeamMembers, setShowTeamPanel }) {
                 />
               </FormControl>
               <FormMessage />
+              <FormDescription>
+                Image you are uploading must be of size
+                <strong> 120 × 30</strong>.{" "}
+              </FormDescription>
             </FormItem>
           )}
         />

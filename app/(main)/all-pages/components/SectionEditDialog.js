@@ -30,6 +30,7 @@ import {
   FormMessage,
   FormLabel,
 } from "@/components/ui/form";
+import { SECTIONIMAGES } from "@/lib/sectionImages";
 
 const SectionSchema = z.object({
   headline: z.string().min(1, "Headline is required"),
@@ -50,7 +51,8 @@ export function SectionEditDialog({ section, getSinglePageData }) {
   const [mediaPreview, setMediaPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const imageSize =
+    SECTIONIMAGES.find((item) => item?.sectionId === section?._id) || null;
   useEffect(() => {
     const t = localStorage.getItem("authToken");
     if (t) setAuthToken(t);
@@ -96,9 +98,15 @@ export function SectionEditDialog({ section, getSinglePageData }) {
     if (!isVideo) {
       const img = new Image();
       const url = URL.createObjectURL(file);
+
       img.onload = () => {
-        if (img.width !== 1440 || img.height !== 800) {
-          toast.error("Image must be exactly 1440×800.");
+        if (
+          img.width !== imageSize?.imagewidth ||
+          img.height !== imageSize?.imageHeight
+        ) {
+          toast.error(
+            `Image must be exactly ${imageSize?.imagewidth}x${imageSize?.imageHeight}`
+          );
           URL.revokeObjectURL(url);
           return;
         }
@@ -291,7 +299,8 @@ export function SectionEditDialog({ section, getSinglePageData }) {
 
                   <p className="text-gray-400 text-sm">
                     Image you are uploading must be of size
-                    <strong>1440 × 800</strong>.
+                    <strong>{` ${imageSize?.imagewidth}x${imageSize?.imageHeight}`}</strong>
+                    .
                   </p>
                 </div>
               )}
