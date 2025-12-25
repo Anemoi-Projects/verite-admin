@@ -320,7 +320,7 @@ const Page = () => {
           >
             <SheetHeader>
               <SheetTitle className="text-lg font-semibold uppercase">
-                {headerFooterFormState?.state?.toUpperCase()} header{" "}
+                {headerFooterFormState?.state?.toUpperCase()} Footer{" "}
                 {headerFooterFormState?.state?.type}
               </SheetTitle>
             </SheetHeader>

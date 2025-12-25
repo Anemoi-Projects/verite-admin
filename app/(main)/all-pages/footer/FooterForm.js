@@ -231,6 +231,19 @@ function FooterForm({
                       </FormItem>
                     )}
                   />
+
+                  {initialData?.title === "Reach US" && (
+                    <p className="text-muted-foreground">
+                      Enter <b>NA</b> in the Link Title field if you don’t want
+                      this content to be displayed on the website.
+                    </p>
+                  )}
+                  {initialData?.title === "Socials" && (
+                    <p className="text-muted-foreground">
+                      Enter <b>#</b> in the Link URL field if you don’t want
+                      this content to be displayed on the website.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
