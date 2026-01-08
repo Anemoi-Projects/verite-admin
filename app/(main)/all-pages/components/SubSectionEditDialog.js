@@ -308,7 +308,14 @@ export function SubsectionEditDialog({ subsection, getSinglePageData }) {
               <div className="space-y-2">
                 <FormLabel>Subsection Media</FormLabel>
 
-                <div className="relative w-64 h-64">
+                <div
+                  className={`relative  ${
+                    imageSize?.imageWidth == 500 &&
+                    imageSize?.imageHeight == 500
+                      ? "w-64 h-64"
+                      : "w-64 h-36"
+                  }`}
+                >
                   {mediaType.startsWith("video") ? (
                     <video
                       src={mediaPreview}
