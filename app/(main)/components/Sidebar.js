@@ -14,6 +14,7 @@ import {
   Shield,
   PersonStanding,
   MessageCircleDashed,
+  MailIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -64,7 +65,7 @@ const Sidebar = () => {
         <NavItem Icon={Library} label="Category Library" href="/library" />
         <NavItem Icon={MessageCircleQuestion} label="FAQs" href="/faqs" />
         <NavItem Icon={MessageCircleDashed} label="Messages" href="/messages" />
-        <NavItem Icon={MessageCircleDashed} label="Maillist" href="/maillist" />
+        <NavItem Icon={MailIcon} label="Maillist" href="/maillist" />
         <NavItem Icon={User} label="Users" href="#" />
         <NavItem Icon={MessageCircle} label="Testimonials" href="#" />
       </nav>
