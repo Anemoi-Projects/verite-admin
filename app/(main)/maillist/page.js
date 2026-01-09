@@ -1,11 +1,8 @@
 "use client";
-import { Pencil, Trash2, Eye, ChevronDown, MoreHorizontal } from "lucide-react";
-
-import React, { Suspense, useEffect, useState, useMemo } from "react";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-
 import { toast } from "sonner";
-// import { useToast } from "@/hooks/use-toast";
 
 import {
   Table,
@@ -33,18 +30,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import TeamForm from "./components/TeamForm";
-import AdvisoryTable from "./components/AdvisoryTable";
-import PartnerTable from "./components/PartnerTable";
 import RegionStore from "@/store/RegionStore";
-import RegionSelecter from "@/common-components/RegionSelecter";
 import ThemeToggler from "@/common-components/ThemeToggler";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogClose,
@@ -57,7 +44,6 @@ import {
 
 const Page = () => {
   const [authToken, setAuthToken] = useState("");
-  const router = useRouter();
   const { region: selectedLanguage, setRegion: setSelectedLanguage } =
     RegionStore();
   const [teamFormState, setTeamFormState] = useState({
@@ -70,8 +56,8 @@ const Page = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showTeamPanel, setShowTeamPanel] = useState(false);
-  const [allTeamMembers, setAllTeamMembers] = useState([]);
+  const [allMail, setAllMail] = useState([]);
+  const [rowID, setRowID] = useState(null);
 
   useEffect(() => {
     if (window.localStorage.getItem("authToken")) {
@@ -83,45 +69,44 @@ const Page = () => {
     let config = {
       method: "delete",
       maxBodyLength: Infinity,
-      url: `${process.env.apiURL}/api/v1/team/deleteMember?id=${teamFormState.ID}`,
+      url: `${process.env.apiURL}/api/v1/mail/subscribe/delete`,
       headers: {
         Authorization: authToken,
+        "Content-Type": "application/json",
+      },
+      data: {
+        mailID: rowID,
       },
     };
 
     axios
       .request(config)
       .then((response) => {
-        setTeamFormState((prev) => {
-          return { ID: null, state: "add" };
-        });
         setShowDeleteModal(false);
-        toast.success("Team Member deleted successfully", {
+        toast.success(response.data.data, {
           className: "bg-white text-green-700 border border-green-500",
         });
-
-        getAllTeamMembers();
+        setRowID(null);
+        getAllMail();
       })
       .catch((error) => {
         setShowDeleteModal(false);
-        toast.error("Error while deleting resource");
+        toast.error(error.response.data.data);
         console.log(error);
       });
   };
 
-  const getAllTeamMembers = () => {
+  const getAllMail = () => {
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${process.env.apiURL}/api/v1/team/getMembers?type=internalTeam`,
-      headers: {},
+      url: `${process.env.apiURL}/api/v1/mail/subscribe/getAll`,
     };
 
     axios
       .request(config)
       .then((response) => {
-        // console.log(JSON.stringify(response.data));
-        setAllTeamMembers(response.data.data);
+        setAllMail(response.data.data);
       })
       .catch((error) => {
         console.log(error);
@@ -135,25 +120,10 @@ const Page = () => {
       cell: ({ row }) => row.index + 1,
     },
     {
-      accessorKey: "picture",
-      header: "Picture",
+      accessorKey: "emailID",
+      header: "Email ID",
       cell: ({ row }) =>
-        row?.original?.picture ? (
-          <img src={row.original.picture} className="h-20 w-20" />
-        ) : (
-          "N/A"
-        ),
-    },
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => (row?.original?.name ? row?.original?.name : "N/A"),
-    },
-    {
-      accessorKey: "designation",
-      header: "Designation",
-      cell: ({ row }) =>
-        row?.original?.designation ? row?.original?.designation : "N/A",
+        row?.original?.emailID ? row?.original?.emailID : "N/A",
     },
 
     {
@@ -171,20 +141,7 @@ const Page = () => {
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => {
-                  setTeamFormState((prev) => {
-                    return { ID: row?.original?._id, state: "edit" };
-                  });
-                  setShowTeamPanel(true);
-                }}
-              >
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setTeamFormState((prev) => {
-                    return { ID: row?.original?._id, state: "delete" };
-                  });
+                  setRowID(row.original._id);
                   setShowDeleteModal(true);
                 }}
               >
@@ -198,7 +155,7 @@ const Page = () => {
   ];
 
   const table = useReactTable({
-    data: allTeamMembers,
+    data: allMail,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -220,34 +177,16 @@ const Page = () => {
 
   useEffect(() => {
     if (selectedLanguage) {
-      getAllTeamMembers();
+      getAllMail();
     }
   }, [selectedLanguage]);
   return (
     <main className="flex-1 overflow-auto">
       <div className="flex justify-between p-5 border-b">
-        <h1 className="text-2xl font-medium">Teams &amp; Partners</h1>
+        <h1 className="text-2xl font-medium">Mail List</h1>
         <ThemeToggler />
       </div>
       <section className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          {" "}
-          <h2 className="text-lg font-medium mb-4">Teams Members</h2>
-          <div className="flex gap-4 items-center">
-            <Button
-              className="theme-button"
-              onClick={() => {
-                setTeamFormState((prev) => {
-                  return { ID: null, state: "add" };
-                });
-                setShowTeamPanel(true);
-              }}
-            >
-              Add Team Member
-            </Button>
-          </div>
-        </div>
-
         <div className=" mb-4 ">
           {/* .............table........... */}
 
@@ -335,7 +274,7 @@ const Page = () => {
                         colSpan={columns.length}
                         className="h-24 text-center"
                       >
-                        No Team Member Found.
+                        No Mail Subscribers found.
                       </TableCell>
                     </TableRow>
                   )}
@@ -361,7 +300,7 @@ const Page = () => {
                   )}
                 </strong>{" "}
                 of <strong>{table.getFilteredRowModel().rows.length}</strong>{" "}
-                members
+                Subscribers
               </div>
               <div className="flex flex-row gap-2">
                 <Button
@@ -388,40 +327,13 @@ const Page = () => {
         </div>
       </section>
 
-      <section>
-        <PartnerTable selectedLanguage={selectedLanguage} />
-      </section>
-
-      {/* .........resource panel...... */}
-      <Sheet open={showTeamPanel} onOpenChange={setShowTeamPanel}>
-        <SheetContent
-          side="right"
-          className="h-full w-full sm:w-3/5 p-6 overflow-y-auto animate-in slide-in-from-right"
-        >
-          {/* HEADER */}
-          <SheetHeader>
-            <SheetTitle className="text-lg font-semibold">
-              {teamFormState?.state?.toUpperCase()} Team Member
-            </SheetTitle>
-          </SheetHeader>
-
-          {/* FORM */}
-          <TeamForm
-            teamFormState={teamFormState}
-            getAllTeamMembers={getAllTeamMembers}
-            setShowTeamPanel={setShowTeamPanel}
-            selectedLanguage={selectedLanguage}
-          />
-        </SheetContent>
-      </Sheet>
-
       {/* ..........delete modal........ */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Team Member Deletion</DialogTitle>
+            <DialogTitle>Confirm Mail Subscriber Deletion</DialogTitle>
             <DialogDescription>
-              Deleting this team member will permanently erase their profile and
+              Deleting this mail subscriber will permanently erase their profile and
               associated details. Proceed with caution.
             </DialogDescription>
           </DialogHeader>
